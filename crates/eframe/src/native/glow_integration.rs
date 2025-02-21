@@ -11,7 +11,7 @@ use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc, time::Instant};
 
 use egui_winit::ActionRequested;
 use glutin::{
-    config::GlConfig,
+    config::{Config, GlConfig},
     context::NotCurrentGlContext,
     display::GetGlDisplay,
     prelude::{GlDisplay, PossiblyCurrentGlContext},
@@ -83,7 +83,7 @@ struct GlowWinitRunning<'app> {
 ///
 /// The setup is divided between the `new` fn and `on_resume` fn. we can just assume that `on_resume` is a continuation of
 /// `new` fn on all platforms. only on android, do we get multiple resumed events because app can be suspended.
-struct GlutinWindowContext {
+pub struct GlutinWindowContext {
     egui_ctx: egui::Context,
 
     swap_interval: glutin::surface::SwapInterval,
@@ -307,6 +307,8 @@ impl<'app> GlowWinitApp<'app> {
                 wgpu_render_state: None,
                 raw_display_handle: window.display_handle().map(|h| h.as_raw()),
                 raw_window_handle: window.window_handle().map(|h| h.as_raw()),
+                #[cfg(feature = "glow")]
+                glutin_window_ctx: Some(&glutin),
             };
             crate::profile_scope!("app_creator");
             app_creator(&cc).map_err(crate::Error::AppCreation)?
@@ -1316,6 +1318,14 @@ impl GlutinWindowContext {
         self.initialize_all_windows(event_loop);
 
         self.remove_viewports_not_in(viewport_output);
+    }
+
+    pub fn gl_context(&self) -> &Option<glutin::context::PossiblyCurrentContext> {
+        &self.current_gl_context
+    }
+
+    pub fn gl_config(&self) -> &Config {
+        &self.gl_config
     }
 }
 
