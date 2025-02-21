@@ -11,7 +11,7 @@ use std::{cell::RefCell, num::NonZeroU32, rc::Rc, sync::Arc, time::Instant};
 
 use egui_winit::ActionRequested;
 use glutin::{
-    config::GlConfig,
+    config::{Config, GlConfig},
     context::NotCurrentGlContext,
     display::GetGlDisplay,
     prelude::{GlDisplay, PossiblyCurrentGlContext},
@@ -83,7 +83,7 @@ struct GlowWinitRunning<'app> {
 ///
 /// The setup is divided between the `new` fn and `on_resume` fn. we can just assume that `on_resume` is a continuation of
 /// `new` fn on all platforms. only on android, do we get multiple resumed events because app can be suspended.
-struct GlutinWindowContext {
+pub struct GlutinWindowContext {
     egui_ctx: egui::Context,
 
     swap_interval: glutin::surface::SwapInterval,
@@ -290,12 +290,13 @@ impl<'app> GlowWinitApp<'app> {
         let app_creator = std::mem::take(&mut self.app_creator)
             .expect("Single-use AppCreator has unexpectedly already been taken");
 
+        let glutin = Rc::new(RefCell::new(glutin));
         let app: Box<dyn 'app + App> = {
             // Use latest raw_window_handle for eframe compatibility
             use raw_window_handle::{HasDisplayHandle as _, HasWindowHandle as _};
 
-            let get_proc_address = |addr: &_| glutin.get_proc_address(addr);
-            let window = glutin.window(ViewportId::ROOT);
+            let get_proc_address = |addr: &_| glutin.borrow().get_proc_address(addr);
+            let window = glutin.borrow().window(ViewportId::ROOT);
             let cc = CreationContext {
                 egui_ctx: integration.egui_ctx.clone(),
                 integration_info: integration.frame.info().clone(),
@@ -306,12 +307,12 @@ impl<'app> GlowWinitApp<'app> {
                 wgpu_render_state: None,
                 raw_display_handle: window.display_handle().map(|h| h.as_raw()),
                 raw_window_handle: window.window_handle().map(|h| h.as_raw()),
+                #[cfg(feature = "glow")]
+                glutin_window_ctx: Some(glutin.clone()),
             };
             profiling::scope!("app_creator");
             app_creator(&cc).map_err(crate::Error::AppCreation)?
         };
-
-        let glutin = Rc::new(RefCell::new(glutin));
 
         {
             // Create weak pointers so that we don't keep
@@ -1333,6 +1334,14 @@ impl GlutinWindowContext {
         self.initialize_all_windows(event_loop);
 
         self.remove_viewports_not_in(viewport_output);
+    }
+
+    pub fn gl_context(&self) -> &Option<glutin::context::PossiblyCurrentContext> {
+        &self.current_gl_context
+    }
+
+    pub fn gl_config(&self) -> &Config {
+        &self.gl_config
     }
 }
 
