@@ -14,6 +14,10 @@ use std::any::Any;
 pub use crate::native::winit_integration::UserEvent;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(any(feature = "glow", feature = "wgpu"))]
+pub use crate::native::glow_integration::GlutinWindowContext;
+
+#[cfg(not(target_arch = "wasm32"))]
 use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
     RawWindowHandle, WindowHandle,
@@ -89,6 +93,10 @@ pub struct CreationContext<'s> {
     /// Raw platform display handle for window
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) raw_display_handle: Result<RawDisplayHandle, HandleError>,
+
+    /// Glutin window context
+    #[cfg(feature = "glow")]
+    pub glutin_window_ctx: Option<&'s GlutinWindowContext>,
 }
 
 #[allow(unsafe_code)]
