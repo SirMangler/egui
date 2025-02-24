@@ -290,12 +290,13 @@ impl<'app> GlowWinitApp<'app> {
         let app_creator = std::mem::take(&mut self.app_creator)
             .expect("Single-use AppCreator has unexpectedly already been taken");
 
+        let glutin = Rc::new(RefCell::new(glutin));
         let app: Box<dyn 'app + App> = {
             // Use latest raw_window_handle for eframe compatibility
             use raw_window_handle::{HasDisplayHandle as _, HasWindowHandle as _};
 
-            let get_proc_address = |addr: &_| glutin.get_proc_address(addr);
-            let window = glutin.window(ViewportId::ROOT);
+            let get_proc_address = |addr: &_| glutin.borrow().get_proc_address(addr);
+            let window = glutin.borrow().window(ViewportId::ROOT);
             let cc = CreationContext {
                 egui_ctx: integration.egui_ctx.clone(),
                 integration_info: integration.frame.info().clone(),
@@ -307,13 +308,11 @@ impl<'app> GlowWinitApp<'app> {
                 raw_display_handle: window.display_handle().map(|h| h.as_raw()),
                 raw_window_handle: window.window_handle().map(|h| h.as_raw()),
                 #[cfg(feature = "glow")]
-                glutin_window_ctx: Some(&glutin),
+                glutin_window_ctx: Some(glutin.clone()),
             };
             profiling::scope!("app_creator");
             app_creator(&cc).map_err(crate::Error::AppCreation)?
         };
-
-        let glutin = Rc::new(RefCell::new(glutin));
 
         {
             // Create weak pointers so that we don't keep
