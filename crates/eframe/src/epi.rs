@@ -15,7 +15,7 @@ use std::{cell::RefCell, rc::Rc};
 pub use crate::native::winit_integration::UserEvent;
 
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(any(feature = "glow", feature = "wgpu"))]
+#[cfg(any(feature = "glow"))]
 pub use crate::native::glow_integration::GlutinWindowContext;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -136,6 +136,7 @@ impl CreationContext<'_> {
             raw_window_handle: Err(HandleError::NotSupported),
             #[cfg(not(target_arch = "wasm32"))]
             raw_display_handle: Err(HandleError::NotSupported),
+            #[cfg(feature = "glow")]
             glutin_window_ctx: None,
         }
     }
