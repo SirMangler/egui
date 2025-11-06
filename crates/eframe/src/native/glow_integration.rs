@@ -64,7 +64,7 @@ struct GlowWinitRunning<'app> {
     app: Box<dyn 'app + App>,
 
     // These needs to be shared with the immediate viewport renderer, hence the Rc/Arc/RefCells:
-    glutin: Rc<RefCell<GlutinWindowContext>>,
+    glutin: Arc<RefCell<GlutinWindowContext>>,
 
     // NOTE: one painter shared by all viewports.
     painter: Rc<RefCell<egui_glow::Painter>>,
@@ -290,7 +290,7 @@ impl<'app> GlowWinitApp<'app> {
         let app_creator = std::mem::take(&mut self.app_creator)
             .expect("Single-use AppCreator has unexpectedly already been taken");
 
-        let glutin = Rc::new(RefCell::new(glutin));
+        let glutin = Arc::new(RefCell::new(glutin));
         let app: Box<dyn 'app + App> = {
             // Use latest raw_window_handle for eframe compatibility
             use raw_window_handle::{HasDisplayHandle as _, HasWindowHandle as _};
@@ -317,7 +317,7 @@ impl<'app> GlowWinitApp<'app> {
         {
             // Create weak pointers so that we don't keep
             // state alive for too long.
-            let glutin = Rc::downgrade(&glutin);
+            let glutin = Arc::downgrade(&glutin);
             let painter = Rc::downgrade(&painter);
             let beginning = integration.beginning;
 

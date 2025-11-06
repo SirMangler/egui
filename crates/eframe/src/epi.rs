@@ -8,6 +8,8 @@
 
 #[cfg(target_arch = "wasm32")]
 use std::any::Any;
+#[cfg(feature = "glow")]
+use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -97,7 +99,7 @@ pub struct CreationContext<'s> {
 
     /// Glutin window context
     #[cfg(feature = "glow")]
-    pub glutin_window_ctx: Option<Rc<RefCell<GlutinWindowContext>>>,
+    pub glutin_window_ctx: Option<Arc<RefCell<GlutinWindowContext>>>,
 }
 
 #[allow(unsafe_code)]
